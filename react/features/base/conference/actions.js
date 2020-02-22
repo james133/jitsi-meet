@@ -1,5 +1,7 @@
 // @flow
 
+import type { Dispatch } from 'redux';
+
 import {
     createStartMutedConfigurationEvent,
     sendAnalytics
@@ -12,6 +14,7 @@ import { JitsiConferenceEvents } from '../lib-jitsi-meet';
 import { setAudioMuted, setVideoMuted } from '../media';
 import {
     dominantSpeakerChanged,
+    getLocalParticipant,
     getNormalizedDisplayName,
     participantConnectionStatusChanged,
     participantKicked,
@@ -21,7 +24,10 @@ import {
     participantUpdated
 } from '../participants';
 import { getLocalTracks, trackAdded, trackRemoved } from '../tracks';
-import { getJitsiMeetGlobalNS } from '../util';
+import {
+    getBackendSafeRoomName,
+    getJitsiMeetGlobalNS
+} from '../util';
 
 import {
     AUTH_STATUS_CHANGED,
@@ -29,12 +35,14 @@ import {
     CONFERENCE_JOINED,
     CONFERENCE_LEFT,
     CONFERENCE_SUBJECT_CHANGED,
+    CONFERENCE_TIMESTAMP_CHANGED,
     CONFERENCE_WILL_JOIN,
     CONFERENCE_WILL_LEAVE,
     DATA_CHANNEL_OPENED,
     KICKED_OUT,
     LOCK_STATE_CHANGED,
     P2P_STATUS_CHANGED,
+    SEND_TONES,
     SET_DESKTOP_SHARING_ENABLED,
     SET_FOLLOW_ME,
     SET_MAX_RECEIVER_VIDEO_QUALITY,
@@ -58,9 +66,7 @@ import {
     getCurrentConference,
     sendLocalParticipant
 } from './functions';
-import type { Dispatch } from 'redux';
-
-const logger = require('jitsi-meet-logger').getLogger(__filename);
+import logger from './logger';
 
 declare var APP: Object;
 
@@ -73,6 +79,11 @@ declare var APP: Object;
  * @returns {void}
  */
 function _addConferenceListeners(conference, dispatch) {
+    // A simple logger for conference errors received through
+    // the listener. These errors are not handled now, but logged.
+    conference.on(JitsiConferenceEvents.CONFERENCE_ERROR,
+        error => logger.error('Conference error.', error));
+
     // Dispatches into features/base/conference follow:
 
     conference.on(
@@ -83,9 +94,15 @@ function _addConferenceListeners(conference, dispatch) {
         (...args) => dispatch(conferenceJoined(conference, ...args)));
     conference.on(
         JitsiConferenceEvents.CONFERENCE_LEFT,
-        (...args) => dispatch(conferenceLeft(conference, ...args)));
+        (...args) => {
+            dispatch(conferenceTimestampChanged(0));
+            dispatch(conferenceLeft(conference, ...args));
+        });
     conference.on(JitsiConferenceEvents.SUBJECT_CHANGED,
         (...args) => dispatch(conferenceSubjectChanged(...args)));
+
+    conference.on(JitsiConferenceEvents.CONFERENCE_CREATED_TIMESTAMP,
+        (...args) => dispatch(conferenceTimestampChanged(...args)));
 
     conference.on(
         JitsiConferenceEvents.KICKED,
@@ -304,6 +321,22 @@ export function conferenceSubjectChanged(subject: string) {
 }
 
 /**
+* Signals that the conference timestamp has been changed.
+*
+* @param {number} conferenceTimestamp - The UTC timestamp.
+* @returns {{
+*       type: CONFERENCE_TIMESTAMP_CHANGED,
+*       conferenceTimestamp
+* }}
+*/
+export function conferenceTimestampChanged(conferenceTimestamp: number) {
+    return {
+        type: CONFERENCE_TIMESTAMP_CHANGED,
+        conferenceTimestamp
+    };
+}
+
+/**
  * Adds any existing local tracks to a specific conference before the conference
  * is joined. Then signals the intention of the application to have the local
  * participant join the specified conference.
@@ -384,15 +417,18 @@ export function createConference() {
             throw new Error('Cannot join a conference without a room name!');
         }
 
+        const config = state['features/base/config'];
+        const { email, name: nick } = getLocalParticipant(state);
         const conference
             = connection.initJitsiConference(
 
-                // XXX Lib-jitsi-meet does not accept uppercase letters.
-                room.toLowerCase(), {
-                    ...state['features/base/config'],
+                getBackendSafeRoomName(room), {
+                    ...config,
                     applicationName: getName(),
                     getWiFiStatsMethod: getJitsiMeetGlobalNS().getWiFiStats,
-                    confID: `${locationURL.host}${locationURL.pathname}`
+                    confID: `${locationURL.host}${locationURL.pathname}`,
+                    statisticsDisplayName: config.enableDisplayNameInStats ? nick : undefined,
+                    statisticsId: config.enableEmailInStats ? email : undefined
                 });
 
         connection[JITSI_CONNECTION_CONFERENCE_KEY] = conference;
@@ -517,6 +553,28 @@ export function p2pStatusChanged(p2p: boolean) {
     return {
         type: P2P_STATUS_CHANGED,
         p2p
+    };
+}
+
+/**
+ * Signals to play touch tones.
+ *
+ * @param {string} tones - The tones to play.
+ * @param {number} [duration] - How long to play each tone.
+ * @param {number} [pause] - How long to pause between each tone.
+ * @returns {{
+ *     type: SEND_TONES,
+ *     tones: string,
+ *     duration: number,
+ *     pause: number
+ * }}
+ */
+export function sendTones(tones: string, duration: number, pause: number) {
+    return {
+        type: SEND_TONES,
+        tones,
+        duration,
+        pause
     };
 }
 

@@ -9,7 +9,8 @@ THE_MVN_REPO=${MVN_REPO:-${1:-$DEFAULT_MVN_REPO}}
 MVN_HTTP=0
 DEFAULT_SDK_VERSION=$(grep sdkVersion ${THIS_DIR}/../gradle.properties | cut -d"=" -f2)
 SDK_VERSION=${OVERRIDE_SDK_VERSION:-${DEFAULT_SDK_VERSION}}
-RN_VERSION=$(jq -r '.dependencies."react-native"' ${THIS_DIR}/../../package.json)
+RN_VERSION=$(jq -r '.version' ${THIS_DIR}/../../node_modules/react-native/package.json)
+HERMES_VERSION=$(jq -r '.dependencies."hermes-engine"' ${THIS_DIR}/../../node_modules/react-native/package.json | cut -c 2-)
 DO_GIT_TAG=${GIT_TAG:-0}
 
 if [[ $THE_MVN_REPO == http* ]]; then
@@ -37,14 +38,22 @@ if [[ $MVN_HTTP == 1 ]]; then
         -DgeneratePom=false \
         -DpomFile=react-native-${RN_VERSION}.pom || true
     popd
+    # Push Hermes
+    echo "Pushing Hermes ${HERMES_VERSION} to the Maven repo"
+    pushd ${THIS_DIR}/../../node_modules/hermes-engine/android/
+    mvn \
+        deploy:deploy-file \
+        -Durl=${MVN_REPO} \
+        -DrepositoryId=${MVN_REPO_ID} \
+        -Dfile=hermes-release.aar \
+        -Dpackaging=aar \
+        -DgroupId=com.facebook \
+        -DartifactId=hermes \
+        -Dversion=${HERMES_VERSION} \
+        -DgeneratePom=true || true
+    popd
 else
-    # Check if an SDK with that same version has already been released
-    if [[ -d ${MVN_REPO}/org/jitsi/react/jitsi-meet-sdk/${SDK_VERSION} ]]; then
-        echo "There is already a release with that version in the Maven repo!"
-        exit 1
-    fi
-
-    # First push React Native, if necessary
+    # Push React Native, if necessary
     if [[ ! -d ${MVN_REPO}/com/facebook/react/react-native/${RN_VERSION} ]]; then
         echo "Pushing React Native ${RN_VERSION} to the Maven repo"
         pushd ${THIS_DIR}/../../node_modules/react-native/android/com/facebook/react/react-native/${RN_VERSION}
@@ -56,6 +65,28 @@ else
             -DgeneratePom=false \
             -DpomFile=react-native-${RN_VERSION}.pom
         popd
+    fi
+
+    # Push Hermes, if necessary
+    if [[ ! -d ${MVN_REPO}/com/facebook/hermes/${HERMES_VERSION} ]]; then
+        echo "Pushing Hermes ${HERMES_VERSION} to the Maven repo"
+        pushd ${THIS_DIR}/../../node_modules/hermes-engine/android/
+        mvn \
+            deploy:deploy-file \
+            -Durl=${MVN_REPO} \
+            -Dfile=hermes-release.aar \
+            -Dpackaging=aar \
+            -DgroupId=com.facebook \
+            -DartifactId=hermes \
+            -Dversion=${HERMES_VERSION} \
+            -DgeneratePom=true
+        popd
+    fi
+
+    # Check if an SDK with that same version has already been released
+    if [[ -d ${MVN_REPO}/org/jitsi/react/jitsi-meet-sdk/${SDK_VERSION} ]]; then
+        echo "There is already a release with that version in the Maven repo!"
+        exit 1
     fi
 fi
 

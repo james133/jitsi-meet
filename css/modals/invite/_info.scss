@@ -63,6 +63,8 @@
         width: -webkit-max-content;
         word-break: break-all;
         max-width: 400px;
+        display: flex;
+        align-items: center;
     }
 
     .info-dialog-dial-in {
@@ -84,6 +86,15 @@
     .info-dialog-url-text:hover {
         color: inherit;
         cursor: inherit;
+    }
+
+    .info-dialog-url-icon {
+        display: inline-block;
+        margin-left: 5px;
+
+        svg {
+            cursor: pointer;
+        }
     }
 
     .info-dialog-title {
@@ -129,15 +140,13 @@
     margin-top: 20px;
     font-size: 12px;
     line-height: 24px;
-    border-collapse: separate;
-    border-spacing: 0 5px;
+    border-collapse: collapse;
 
     thead {
         text-align: left;
     }
 
-    td,
-    th {
+    tr {
         border-bottom: 1px solid #d1dbe8;
     }
 
@@ -213,5 +222,11 @@
         user-select: text;
         -moz-user-select: text;
         -webkit-user-select: text;
+    }
+
+    .info-dialog-url-text-unselectable {
+        user-select: none;
+        -moz-user-select: none;
+        -webkit-user-select: none;
     }
 }

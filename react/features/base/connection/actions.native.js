@@ -9,7 +9,10 @@ import {
     getCurrentConference
 } from '../conference';
 import JitsiMeetJS, { JitsiConnectionEvents } from '../lib-jitsi-meet';
-import { parseURIString } from '../util';
+import {
+    getBackendSafeRoomName,
+    parseURIString
+} from '../util';
 
 import {
     CONNECTION_DISCONNECTED,
@@ -19,8 +22,7 @@ import {
     SET_LOCATION_URL
 } from './actionTypes';
 import { JITSI_CONNECTION_URL_KEY } from './constants';
-
-const logger = require('jitsi-meet-logger').getLogger(__filename);
+import logger from './logger';
 
 /**
  * The error structure passed to the {@link connectionFailed} action.
@@ -102,7 +104,7 @@ export function connect(id: ?string, password: ?string) {
             JitsiConnectionEvents.CONNECTION_FAILED,
             _onConnectionFailed);
 
-        return connection.connect({
+        connection.connect({
             id,
             password
         });
@@ -297,23 +299,21 @@ function _constructOptions(state) {
             // Handle relative URLs, which won't work on mobile.
             const {
                 protocol,
-                hostname,
+                host,
                 contextRoot
             } = parseURIString(locationURL.href);
 
             // eslint-disable-next-line max-len
-            bosh = `${protocol}//${hostname}${contextRoot || '/'}${bosh.substr(1)}`;
+            bosh = `${protocol}//${host}${contextRoot || '/'}${bosh.substr(1)}`;
         }
 
         // Append room to the URL's search.
         const { room } = state['features/base/conference'];
 
-        // XXX The Jitsi Meet deployments require the room argument to be in
-        // lower case at the time of this writing but, unfortunately, they do
-        // not ignore case themselves.
-        room && (bosh += `?room=${room.toLowerCase()}`);
+        room && (bosh += `?room=${getBackendSafeRoomName(room)}`);
 
-        options.bosh = bosh;
+        // FIXME Remove deprecated 'bosh' option assignment at some point.
+        options.serviceUrl = options.bosh = bosh;
     }
 
     return options;

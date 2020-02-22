@@ -110,7 +110,7 @@ class StartLiveStreamDialog
 
     _onSubmit: () => boolean;
 
-    _onInitializeGoogleApi: () => Promise<*>;
+    _onInitializeGoogleApi: () => void;
 
     /**
      * Loads the Google web client application used for fetching stream keys.
@@ -118,11 +118,10 @@ class StartLiveStreamDialog
      * broadcasts is also made.
      *
      * @private
-     * @returns {Promise}
+     * @returns {void}
      */
     _onInitializeGoogleApi() {
-        this.props.dispatch(
-            loadGoogleAPI(this.props._googleApiApplicationClientID))
+        this.props.dispatch(loadGoogleAPI())
         .catch(response => this._parseErrorFromResponse(response));
     }
 
@@ -140,7 +139,7 @@ class StartLiveStreamDialog
         }
     }
 
-    _onGetYouTubeBroadcasts: () => Promise<*>;
+    _onGetYouTubeBroadcasts: () => void;
 
     /**
      * Asks the user to sign in, if not already signed in, and then requests a

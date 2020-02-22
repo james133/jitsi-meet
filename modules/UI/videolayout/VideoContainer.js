@@ -5,10 +5,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 
 import { browser } from '../../../react/features/base/lib-jitsi-meet';
-import {
-    ORIENTATION,
-    LargeVideoBackground
-} from '../../../react/features/large-video';
+import { ORIENTATION, LargeVideoBackground } from '../../../react/features/large-video';
+import { LAYOUTS, getCurrentLayout } from '../../../react/features/video-layout';
 /* eslint-enable no-unused-vars */
 
 import Filmstrip from './Filmstrip';
@@ -20,24 +18,6 @@ import UIUtil from '../util/UIUtil';
 export const VIDEO_CONTAINER_TYPE = 'camera';
 
 const FADE_DURATION_MS = 300;
-
-/**
- * The CSS class used to add a filter effect on the large video when there is
- * a problem with local video.
- *
- * @private
- * @type {string}
- */
-const LOCAL_PROBLEM_FILTER_CLASS = 'videoProblemFilter';
-
-/**
- * The CSS class used to add a filter effect on the large video when there is
- * a problem with remote video.
- *
- * @private
- * @type {string}
- */
-const REMOTE_PROBLEM_FILTER_CLASS = 'remoteVideoProblemFilter';
 
 /**
  * Returns an array of the video dimensions, so that it keeps it's aspect
@@ -55,14 +35,18 @@ function computeDesktopVideoSize( // eslint-disable-line max-params
         videoHeight,
         videoSpaceWidth,
         videoSpaceHeight) {
-    const aspectRatio = videoWidth / videoHeight;
+    if (videoWidth === 0 || videoHeight === 0 || videoSpaceWidth === 0 || videoSpaceHeight === 0) {
+        // Avoid NaN values caused by devision by 0.
+        return [ 0, 0 ];
+    }
 
+    const aspectRatio = videoWidth / videoHeight;
     let availableWidth = Math.max(videoWidth, videoSpaceWidth);
     let availableHeight = Math.max(videoHeight, videoSpaceHeight);
 
     if (interfaceConfig.VERTICAL_FILMSTRIP) {
         // eslint-disable-next-line no-param-reassign
-        videoSpaceWidth -= Filmstrip.getFilmstripWidth();
+        videoSpaceWidth -= Filmstrip.getVerticalFilmstripWidth();
     } else {
         // eslint-disable-next-line no-param-reassign
         videoSpaceHeight -= Filmstrip.getFilmstripHeight();
@@ -99,6 +83,11 @@ function computeCameraVideoSize( // eslint-disable-line max-params
         videoSpaceWidth,
         videoSpaceHeight,
         videoLayoutFit) {
+    if (videoWidth === 0 || videoHeight === 0 || videoSpaceWidth === 0 || videoSpaceHeight === 0) {
+        // Avoid NaN values caused by devision by 0.
+        return [ 0, 0 ];
+    }
+
     const aspectRatio = videoWidth / videoHeight;
 
     switch (videoLayoutFit) {
@@ -283,18 +272,6 @@ export class VideoContainer extends LargeContainer {
     }
 
     /**
-     * Enables a filter on the video which indicates that there are some
-     * problems with the local media connection.
-     *
-     * @param {boolean} enable <tt>true</tt> if the filter is to be enabled or
-     * <tt>false</tt> otherwise.
-     */
-    enableLocalConnectionProblemFilter(enable) {
-        this.$video.toggleClass(LOCAL_PROBLEM_FILTER_CLASS, enable);
-        this._updateBackground();
-    }
-
-    /**
      * Obtains media stream ID of the underlying {@link JitsiTrack}.
      * @return {string|null}
      */
@@ -322,7 +299,7 @@ export class VideoContainer extends LargeContainer {
      * @param {number} containerHeight container height
      * @returns {{availableWidth, availableHeight}}
      */
-    getVideoSize(containerWidth, containerHeight) {
+    _getVideoSize(containerWidth, containerHeight) {
         const { width, height } = this.getStreamSize();
 
         if (this.stream && this.isScreenSharing()) {
@@ -355,7 +332,7 @@ export class VideoContainer extends LargeContainer {
         /* eslint-enable max-params */
         if (this.stream && this.isScreenSharing()) {
             if (interfaceConfig.VERTICAL_FILMSTRIP) {
-                containerWidthToUse -= Filmstrip.getFilmstripWidth();
+                containerWidthToUse -= Filmstrip.getVerticalFilmstripWidth();
             }
 
             return getCameraVideoPosition(width,
@@ -414,13 +391,29 @@ export class VideoContainer extends LargeContainer {
         if (this.$video.length === 0) {
             return;
         }
+        const currentLayout = getCurrentLayout(APP.store.getState());
 
-        const [ width, height ]
-            = this.getVideoSize(containerWidth, containerHeight);
+        if (currentLayout === LAYOUTS.TILE_VIEW) {
+            // We don't need to resize the large video since it won't be displayed and we'll resize when returning back
+            // to stage view.
+            return;
+        }
+
+        this.positionRemoteStatusMessages();
+
+        const [ width, height ] = this._getVideoSize(containerWidth, containerHeight);
+
+        if (width === 0 || height === 0) {
+            // We don't need to set 0 for width or height since the visibility is controled by the visibility css prop
+            // on the largeVideoElementsContainer. Also if the width/height of the video element is 0 the attached
+            // stream won't be played. Normally if we attach a new stream we won't resize the video element until the
+            // stream has been played. But setting width/height to 0 will prevent the video from playing.
+
+            return;
+        }
 
         if ((containerWidth > width) || (containerHeight > height)) {
-            this._backgroundOrientation = containerWidth > width
-                ? ORIENTATION.LANDSCAPE : ORIENTATION.PORTRAIT;
+            this._backgroundOrientation = containerWidth > width ? ORIENTATION.LANDSCAPE : ORIENTATION.PORTRAIT;
             this._hideBackground = false;
         } else {
             this._hideBackground = true;
@@ -429,15 +422,7 @@ export class VideoContainer extends LargeContainer {
         this._updateBackground();
 
         const { horizontalIndent, verticalIndent }
-            = this.getVideoPosition(width, height,
-            containerWidth, containerHeight);
-
-        // update avatar position
-        const top = (containerHeight / 2) - (this.avatarHeight / 4 * 3);
-
-        this.$avatar.css('top', top);
-
-        this.positionRemoteStatusMessages();
+            = this.getVideoPosition(width, height, containerWidth, containerHeight);
 
         this.$wrapper.animate({
             width,
@@ -562,20 +547,6 @@ export class VideoContainer extends LargeContainer {
     }
 
     /**
-     * Indicates that the remote user who is currently displayed by this video
-     * container is having connectivity issues.
-     *
-     * @param {boolean} show <tt>true</tt> to show or <tt>false</tt> to hide
-     * the indication.
-     */
-    showRemoteConnectionProblemIndicator(show) {
-        this.$video.toggleClass(REMOTE_PROBLEM_FILTER_CLASS, show);
-        this.$avatar.toggleClass(REMOTE_PROBLEM_FILTER_CLASS, show);
-        this._updateBackground();
-    }
-
-
-    /**
      * We are doing fadeOut/fadeIn animations on parent div which wraps
      * largeVideo, because when Temasys plugin is in use it replaces
      * <video> elements with plugin <object> tag. In Safari jQuery is
@@ -671,10 +642,6 @@ export class VideoContainer extends LargeContainer {
                     && this.localFlipX
                 }
                 orientationFit = { this._backgroundOrientation }
-                showLocalProblemFilter
-                    = { this.$video.hasClass(LOCAL_PROBLEM_FILTER_CLASS) }
-                showRemoteProblemFilter
-                    = { this.$video.hasClass(REMOTE_PROBLEM_FILTER_CLASS) }
                 videoElement = { this.$video && this.$video[0] }
                 videoTrack = { this.stream } />,
             document.getElementById('largeVideoBackgroundContainer')

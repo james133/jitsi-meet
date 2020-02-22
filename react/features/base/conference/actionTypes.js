@@ -53,6 +53,16 @@ export const CONFERENCE_LEFT = 'CONFERENCE_LEFT';
 export const CONFERENCE_SUBJECT_CHANGED = 'CONFERENCE_SUBJECT_CHANGED';
 
 /**
+* The type of (redux) action, which indicates conference UTC timestamp changes.
+*
+* {
+*      type: CONFERENCE_TIMESTAMP_CHANGED
+*      timestamp: number
+* }
+*/
+export const CONFERENCE_TIMESTAMP_CHANGED = 'CONFERENCE_TIMESTAMP_CHANGED';
+
+/**
  * The type of (redux) action which signals that a specific conference will be
  * joined.
  *
@@ -117,6 +127,18 @@ export const LOCK_STATE_CHANGED = 'LOCK_STATE_CHANGED';
  * }
  */
 export const P2P_STATUS_CHANGED = 'P2P_STATUS_CHANGED';
+
+/**
+ * The type of (redux) action which signals to play specified touch tones.
+ *
+ * {
+ *     type: SEND_TONES,
+ *     tones: string,
+ *     duration: number,
+ *     pause: number
+ * }
+ */
+export const SEND_TONES = 'SEND_TONES';
 
 /**
  * The type of (redux) action which sets the desktop sharing enabled flag for

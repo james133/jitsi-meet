@@ -1,10 +1,10 @@
 // @flow
 
-import { reloadNow } from '../../app';
+import { openDisplayNamePrompt } from '../../display-name';
+
 import {
     ACTION_PINNED,
     ACTION_UNPINNED,
-    createConnectionEvent,
     createOfferAnswerFailedEvent,
     createPinnedEvent,
     sendAnalytics
@@ -12,6 +12,7 @@ import {
 import { CONNECTION_ESTABLISHED, CONNECTION_FAILED } from '../connection';
 import { JitsiConferenceErrors } from '../lib-jitsi-meet';
 import {
+    getLocalParticipant,
     getParticipantById,
     getPinnedParticipant,
     PARTICIPANT_UPDATED,
@@ -32,6 +33,7 @@ import {
     CONFERENCE_SUBJECT_CHANGED,
     CONFERENCE_WILL_LEAVE,
     DATA_CHANNEL_OPENED,
+    SEND_TONES,
     SET_PENDING_SUBJECT_CHANGE,
     SET_ROOM
 } from './actionTypes';
@@ -41,8 +43,8 @@ import {
     forEachConference,
     getCurrentConference
 } from './functions';
-
-const logger = require('jitsi-meet-logger').getLogger(__filename);
+import logger from './logger';
+import { MEDIA_TYPE } from '../media';
 
 declare var APP: Object;
 
@@ -87,6 +89,9 @@ MiddlewareRegistry.register(store => next => action => {
     case PIN_PARTICIPANT:
         return _pinParticipant(store, next, action);
 
+    case SEND_TONES:
+        return _sendTones(store, next, action);
+
     case SET_ROOM:
         return _setRoom(store, next, action);
 
@@ -111,16 +116,12 @@ StateListenerRegistry.register(
             maxReceiverVideoQuality,
             preferredReceiverVideoQuality
         } = currentState;
-        const changedPreferredVideoQuality = preferredReceiverVideoQuality
-            !== previousState.preferredReceiverVideoQuality;
-        const changedMaxVideoQuality = maxReceiverVideoQuality
-            !== previousState.maxReceiverVideoQuality;
+        const changedPreferredVideoQuality
+            = preferredReceiverVideoQuality !== previousState.preferredReceiverVideoQuality;
+        const changedMaxVideoQuality = maxReceiverVideoQuality !== previousState.maxReceiverVideoQuality;
 
         if (changedPreferredVideoQuality || changedMaxVideoQuality) {
-            _setReceiverVideoConstraint(
-                conference,
-                preferredReceiverVideoQuality,
-                maxReceiverVideoQuality);
+            _setReceiverVideoConstraint(conference, preferredReceiverVideoQuality, maxReceiverVideoQuality);
         }
     });
 
@@ -187,6 +188,7 @@ function _conferenceJoined({ dispatch, getState }, next, action) {
     const result = next(action);
     const { conference } = action;
     const { pendingSubjectChange } = getState()['features/base/conference'];
+    const { requireDisplayName } = getState()['features/base/config'];
 
     pendingSubjectChange && dispatch(setSubject(pendingSubjectChange));
 
@@ -199,6 +201,12 @@ function _conferenceJoined({ dispatch, getState }, next, action) {
         dispatch(conferenceWillLeave(conference));
     };
     window.addEventListener('beforeunload', beforeUnloadHandler);
+
+    if (requireDisplayName
+        && !getLocalParticipant(getState)?.name
+        && !conference.isHidden()) {
+        dispatch(openDisplayNamePrompt(undefined));
+    }
 
     return result;
 }
@@ -242,14 +250,6 @@ function _connectionEstablished({ dispatch }, next, action) {
  * @returns {Object} The value returned by {@code next(action)}.
  */
 function _connectionFailed({ dispatch, getState }, next, action) {
-    // In the case of a split-brain error, reload early and prevent further
-    // handling of the action.
-    if (_isMaybeSplitBrainError(getState, action)) {
-        dispatch(reloadNow());
-
-        return;
-    }
-
     const result = next(action);
 
     if (typeof beforeUnloadHandler !== 'undefined') {
@@ -342,52 +342,6 @@ function _conferenceWillLeave() {
 }
 
 /**
- * Returns whether or not a CONNECTION_FAILED action is for a possible split
- * brain error. A split brain error occurs when at least two users join a
- * conference on different bridges. It is assumed the split brain scenario
- * occurs very early on in the call.
- *
- * @param {Function} getState - The redux function for fetching the current
- * state.
- * @param {Action} action - The redux action {@code CONNECTION_FAILED} which is
- * being dispatched in the specified {@code store}.
- * @private
- * @returns {boolean}
- */
-function _isMaybeSplitBrainError(getState, action) {
-    const { error } = action;
-    const isShardChangedError = error
-        && error.message === 'item-not-found'
-        && error.details
-        && error.details.shard_changed;
-
-    if (isShardChangedError) {
-        const state = getState();
-        const { timeEstablished } = state['features/base/connection'];
-        const { _immediateReloadThreshold } = state['features/base/config'];
-
-        const timeSinceConnectionEstablished
-            = timeEstablished && Date.now() - timeEstablished;
-        const reloadThreshold = typeof _immediateReloadThreshold === 'number'
-            ? _immediateReloadThreshold : 1500;
-
-        const isWithinSplitBrainThreshold = !timeEstablished
-            || timeSinceConnectionEstablished <= reloadThreshold;
-
-        sendAnalytics(createConnectionEvent('failed', {
-            ...error,
-            connectionEstablished: timeEstablished,
-            splitBrain: isWithinSplitBrainThreshold,
-            timeSinceConnectionEstablished
-        }));
-
-        return isWithinSplitBrainThreshold;
-    }
-
-    return false;
-}
-
-/**
  * Notifies the feature base/conference that the action {@code PIN_PARTICIPANT}
  * is being dispatched within a specific redux store. Pins the specified remote
  * participant in the associated conference, ignores the local participant.
@@ -433,6 +387,31 @@ function _pinParticipant({ getState }, next, action) {
             local,
             'participant_count': conference.getParticipantCount()
         }));
+
+    return next(action);
+}
+
+/**
+ * Requests the specified tones to be played.
+ *
+ * @param {Store} store - The redux store in which the specified {@code action}
+ * is being dispatched.
+ * @param {Dispatch} next - The redux {@code dispatch} function to dispatch the
+ * specified {@code action} to the specified {@code store}.
+ * @param {Action} action - The redux action {@code SEND_TONES} which is
+ * being dispatched in the specified {@code store}.
+ * @private
+ * @returns {Object} The value returned by {@code next(action)}.
+ */
+function _sendTones({ getState }, next, action) {
+    const state = getState();
+    const { conference } = state['features/base/conference'];
+
+    if (conference) {
+        const { duration, tones, pause } = action;
+
+        conference.sendTones(tones, duration, pause);
+    }
 
     return next(action);
 }
@@ -551,7 +530,10 @@ function _syncReceiveVideoQuality({ getState }, next, action) {
 function _trackAddedOrRemoved(store, next, action) {
     const track = action.track;
 
-    if (track && track.local) {
+    // TODO All track swapping should happen here instead of conference.js.
+    // Since we swap the tracks for the web client in conference.js, ignore
+    // presenter tracks here and do not add/remove them to/from the conference.
+    if (track && track.local && track.mediaType !== MEDIA_TYPE.PRESENTER) {
         return (
             _syncConferenceLocalTracksWithState(store, action)
                 .then(() => next(action)));

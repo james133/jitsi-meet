@@ -1,25 +1,27 @@
 // @flow
 
-import { load } from '@tensorflow-models/body-pix';
-
+import * as bodyPix from '@tensorflow-models/body-pix';
 import JitsiStreamBlurEffect from './JitsiStreamBlurEffect';
 
 /**
- * This promise represents the loading of the BodyPix model that is used
- * to extract person segmentation. A multiplier of 0.25 is used to for
- * improved performance on a larger range of CPUs.
- */
-const bpModelPromise = load(0.25);
-
-/**
- * Creates a new instance of JitsiStreamBlurEffect.
+ * Creates a new instance of JitsiStreamBlurEffect. This loads the bodyPix model that is used to
+ * extract person segmentation.
  *
  * @returns {Promise<JitsiStreamBlurEffect>}
  */
-export function createBlurEffect() {
+export async function createBlurEffect() {
     if (!MediaStreamTrack.prototype.getSettings && !MediaStreamTrack.prototype.getConstraints) {
-        return Promise.reject(new Error('JitsiStreamBlurEffect not supported!'));
+        throw new Error('JitsiStreamBlurEffect not supported!');
     }
 
-    return bpModelPromise.then(bpmodel => new JitsiStreamBlurEffect(bpmodel));
+    // An output stride of 16 and a multiplier of 0.5 are used for improved
+    // performance on a larger range of CPUs.
+    const bpModel = await bodyPix.load({
+        architecture: 'MobileNetV1',
+        outputStride: 16,
+        multiplier: 0.50,
+        quantBytes: 2
+    });
+
+    return new JitsiStreamBlurEffect(bpModel);
 }

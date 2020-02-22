@@ -14,9 +14,19 @@ import styles, { AVATAR_SIZE, UNDERLAY_COLOR } from './styles';
 type Props = {
 
     /**
+     * If true, only the avatar gets rendered, no lines of text.
+     */
+    avatarOnly?: boolean,
+
+    /**
      * Preferred size of the avatar.
      */
     avatarSize?: number,
+
+    /**
+     * One of the expected status strings (e.g. 'available') to render a badge on the avatar, if necessary.
+     */
+    avatarStatus?: ?string,
 
     /**
      * External style to be applied to the avatar (icon).
@@ -76,7 +86,9 @@ export default class AvatarListItem extends Component<Props> {
      */
     render() {
         const {
+            avatarOnly,
             avatarSize = AVATAR_SIZE,
+            avatarStatus,
             avatarStyle
         } = this.props;
         const { avatar, colorBase, lines, title } = this.props.item;
@@ -90,9 +102,10 @@ export default class AvatarListItem extends Component<Props> {
                     colorBase = { colorBase }
                     displayName = { title }
                     size = { avatarSize }
+                    status = { avatarStatus }
                     style = { avatarStyle }
                     url = { avatar } />
-                <Container style = { styles.listItemDetails }>
+                { avatarOnly || <Container style = { styles.listItemDetails }>
                     <Text
                         numberOfLines = { 1 }
                         style = { [
@@ -103,7 +116,7 @@ export default class AvatarListItem extends Component<Props> {
                         { title }
                     </Text>
                     {this._renderItemLines(lines)}
-                </Container>
+                </Container>}
                 { this.props.children }
             </Container>
         );

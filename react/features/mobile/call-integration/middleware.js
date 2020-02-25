@@ -1,6 +1,6 @@
 // @flow
 
-import { Alert, NativeModules, Platform } from 'react-native';
+import { DeviceEventEmitter, NativeEventEmitter, Alert, NativeModules, Platform } from 'react-native';
 import uuid from 'uuid';
 
 import { createTrackMutedEvent, sendAnalytics } from '../../analytics';
@@ -20,7 +20,8 @@ import { getInviteURL } from '../../base/connection';
 import {
     MEDIA_TYPE,
     isVideoMutedByAudioOnly,
-    setAudioMuted
+    setAudioMuted,
+    toggleCameraFacingMode
 } from '../../base/media';
 import { MiddlewareRegistry } from '../../base/redux';
 import {
@@ -38,6 +39,7 @@ import { isCallIntegrationEnabled } from './functions';
 
 const { AudioMode } = NativeModules;
 const CallIntegration = CallKit || ConnectionService;
+const logger = require('jitsi-meet-logger').getLogger(__filename);
 
 /**
  * Middleware that captures system actions and hooks up CallKit.
@@ -114,7 +116,10 @@ function _appWillMount({ dispatch, getState }, next, action) {
 
     const delegate = {
         _onPerformSetMutedCallAction,
-        _onPerformEndCallAction
+        _onPerformEndCallAction,
+        _onPerformSetToggleLocalVideoAction,
+        _onPerformToggleCameraFacingModeAction,
+        _onPerformSpeakerModeAction
     };
 
     const subscriptions
@@ -124,7 +129,8 @@ function _appWillMount({ dispatch, getState }, next, action) {
         type: _SET_CALL_INTEGRATION_SUBSCRIPTIONS,
         subscriptions
     });
-
+    // logger.debug("_appWillMount");
+    // Alert.alert('_appWillMount');
     return result;
 }
 
@@ -383,6 +389,60 @@ function _onPerformSetMutedCallAction({ callUUID, muted }) {
 }
 
 /**
+ * Handles CallKit's event {@code performSetMutedCallAction}.
+ *
+ * @param {Object} event - The details of the CallKit event
+ * {@code performSetMutedCallAction}.
+ * @returns {void}
+ */
+function _onPerformSetToggleLocalVideoAction({ callUUID, muted }) {
+    const { dispatch, getState } = this; // eslint-disable-line no-invalid-this
+    const conference = getCurrentConference(getState);
+
+    if (conference && conference.callUUID === callUUID) {
+        muted = Boolean(muted); // eslint-disable-line no-param-reassign
+        sendAnalytics(
+            createTrackMutedEvent('audio', 'call-integration', muted));
+        dispatch(setAudioMuted(muted, /* ensureTrack */ true));
+    }
+}
+
+/**
+ * Handles CallKit's event {@code performSetMutedCallAction}.
+ *
+ * @param {Object} event - The details of the CallKit event
+ * {@code performSetMutedCallAction}.
+ * @returns {void}
+ */
+function _onPerformToggleCameraFacingModeAction() {
+    //const { dispatch } = this; // eslint-disable-line no-invalid-this
+
+     Alert.alert('_onPerformToggleCameraFacingModeAction');
+    //logger.debug('_onPerformToggleCameraFacingModeAction',APP);
+    //APP.store.dispatch(toggleCameraFacingMode());
+    
+}
+
+/**
+ * Handles CallKit's event {@code performSetMutedCallAction}.
+ *
+ * @param {Object} event - The details of the CallKit event
+ * {@code performSetMutedCallAction}.
+ * @returns {void}
+ */
+function _onPerformSpeakerModeAction({ callUUID, muted }) {
+    const { dispatch, getState } = this; // eslint-disable-line no-invalid-this
+    const conference = getCurrentConference(getState);
+
+    if (conference && conference.callUUID === callUUID) {
+        muted = Boolean(muted); // eslint-disable-line no-param-reassign
+        sendAnalytics(
+            createTrackMutedEvent('audio', 'call-integration', muted));
+        dispatch(setAudioMuted(muted, /* ensureTrack */ true));
+    }
+}
+
+/**
  * Update CallKit with the audio only state of the conference. When a conference
  * is in audio only mode we will tell CallKit the call has no video. This
  * affects how the call is saved in the recent calls list.
@@ -503,3 +563,4 @@ function _updateCallIntegrationMuted(conference, state) {
 
     CallIntegration.setMuted(conference.callUUID, muted);
 }
+

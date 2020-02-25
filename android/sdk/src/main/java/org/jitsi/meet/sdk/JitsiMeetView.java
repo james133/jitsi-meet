@@ -19,10 +19,13 @@ package org.jitsi.meet.sdk;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.telecom.DisconnectCause;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.WritableNativeMap;
 
 import org.jitsi.meet.sdk.log.JitsiMeetLogger;
 
@@ -135,6 +138,14 @@ public class JitsiMeetView extends BaseReactView<JitsiMeetViewListener>
                 JitsiMeetLogger.e(re, "Failed to enter PiP mode");
             }
         }
+    }
+    public void toggleCameraFacingMode() {
+
+        WritableNativeMap data = new WritableNativeMap();
+        ReactInstanceManagerHolder.emitEvent(
+                "performToggleCameraFacingModeAction",
+                data);
+
     }
 
     /**

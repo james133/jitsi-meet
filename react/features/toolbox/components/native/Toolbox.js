@@ -19,7 +19,8 @@ import HangupButton from '../HangupButton';
 import OverflowMenuButton from './OverflowMenuButton';
 import styles from './styles';
 import VideoMuteButton from '../VideoMuteButton';
-
+import ToggleCameraButton from './ToggleCameraButton';
+import { AudioRouteButton } from '../../../mobile/audio-mode';
 /**
  * The type of {@link Toolbox}'s React {@code Component} props.
  */
@@ -112,20 +113,11 @@ class Toolbox extends PureComponent<Props> {
             <View
                 pointerEvents = 'box-none'
                 style = { styles.toolbar }>
-                {
-                    _chatEnabled
-                        && <ChatButton
-                            styles = { buttonStylesBorderless }
-                            toggledStyles = {
-                                this._getChatButtonToggledStyle(toggledButtonStyles)
-                            } />
-                }
-                {
-                    !_chatEnabled
-                        && <InfoDialogButton
-                            styles = { buttonStyles }
-                            toggledStyles = { toggledButtonStyles } />
-                }
+               
+                <AudioRouteButton
+                    styles = { buttonStyles }
+                    toggledStyles = { toggledButtonStyles } />
+
                 <AudioMuteButton
                     styles = { buttonStyles }
                     toggledStyles = { toggledButtonStyles } />
@@ -134,8 +126,8 @@ class Toolbox extends PureComponent<Props> {
                 <VideoMuteButton
                     styles = { buttonStyles }
                     toggledStyles = { toggledButtonStyles } />
-                <OverflowMenuButton
-                    styles = { buttonStylesBorderless }
+                <ToggleCameraButton
+                    styles = { buttonStyles }
                     toggledStyles = { toggledButtonStyles } />
             </View>
         );

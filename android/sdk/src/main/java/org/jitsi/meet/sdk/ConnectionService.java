@@ -82,7 +82,30 @@ public class ConnectionService extends android.telecom.ConnectionService {
     static void addConnection(ConnectionImpl connection) {
         connections.put(connection.getCallUUID(), connection);
     }
+    static public void toggleCameraFacingMode() {
 
+        WritableNativeMap data = new WritableNativeMap();
+        ReactInstanceManagerHolder.emitEvent(
+                "performToggleCameraFacingModeAction",
+                data);
+
+    }
+    static public void hangup() {
+        for (ConnectionImpl connection: getConnections()) {
+            JitsiMeetLogger.i(TAG + " onDisconnect " + connection.getCallUUID());
+            WritableNativeMap data = new WritableNativeMap();
+            data.putString("callUUID", connection.getCallUUID());
+            ReactInstanceManagerHolder.emitEvent(
+                    "org.jitsi.meet:features/connection_service#disconnect",
+                    data);
+            // The JavaScript side will not go back to the native with
+            // 'endCall', so the Connection must be removed immediately.
+            setConnectionDisconnected(
+                    connection.getCallUUID(),
+                    new DisconnectCause(DisconnectCause.LOCAL));
+        }
+
+    }
     /**
      * Returns all {@link ConnectionImpl} instances held in this list.
      *

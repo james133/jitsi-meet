@@ -1,5 +1,7 @@
 // @flow
-
+import { DeviceEventEmitter, Alert } from 'react-native';
+import { NativeEventEmitter, NativeModules } from 'react-native';
+import { assign, ReducerRegistry, MiddlewareRegistry } from '../../base/redux';
 import {
     CONFERENCE_FAILED,
     CONFERENCE_JOINED,
@@ -8,7 +10,9 @@ import {
     JITSI_CONFERENCE_URL_KEY,
     SET_ROOM,
     forEachConference,
-    isRoomValid
+    isRoomValid,
+    getConferenceName,
+    getCurrentConference
 } from '../../base/conference';
 import { LOAD_CONFIG_ERROR } from '../../base/config';
 import {
@@ -18,16 +22,163 @@ import {
     JITSI_CONNECTION_URL_KEY,
     getURLWithoutParams
 } from '../../base/connection';
-import { MiddlewareRegistry } from '../../base/redux';
 import { ENTER_PICTURE_IN_PICTURE } from '../picture-in-picture';
 
 import { sendEvent } from './functions';
-
+import { APP_WILL_MOUNT, APP_WILL_UNMOUNT } from '../../base/app';
+import { createTrackMutedEvent, sendAnalytics } from '../../analytics';
+import { appNavigate } from '../../app';
+import { SET_AUDIO_ONLY } from '../../base/audio-only';
+import {
+    MEDIA_TYPE,
+    isVideoMutedByAudioOnly,
+    setAudioMuted,
+    toggleCameraFacingMode
+} from '../../base/media';
 /**
  * Event which will be emitted on the native side to indicate the conference
  * has ended either by user request or because an error was produced.
  */
 const CONFERENCE_TERMINATED = 'CONFERENCE_TERMINATED';
+const logger = require('jitsi-meet-logger').getLogger(__filename);
+
+
+let ExternalAPI = NativeModules.ExternalAPI;
+
+// XXX Rather than wrapping ConnectionService in a new class and forwarding
+// the many methods of the latter to the former, add the one additional
+// method that we need to ConnectionService.
+if (ExternalAPI) {
+    const eventEmitter = new NativeEventEmitter(ExternalAPI);
+
+    ExternalAPI = {
+        ...ExternalAPI,
+        addListener: eventEmitter.addListener.bind(eventEmitter),
+        registerSubscriptions(context, delegate) {
+            logger.debug('registerSubscriptions');
+            
+            return [
+                ExternalAPI.addListener(
+                    'org.jitsi.meet:features/connection_service#disconnect',
+                    delegate._onPerformEndCallAction,
+                    context),
+                ExternalAPI.addListener(
+                    'org.jitsi.meet:features/connection_service#abort',
+                    delegate._onPerformEndCallAction,
+                    context),
+                ExternalAPI.addListener(
+                    'performEndCallAction',
+                     delegate._onPerformEndCallAction,
+                    context),
+                ExternalAPI.addListener(
+                    'performSetToggleLocalVideoAction',
+                    delegate._onPerformSetToggleLocalVideoAction,
+                    context),
+                ExternalAPI.addListener(
+                    'performToggleCameraFacingModeAction',
+                    delegate._onPerformToggleCameraFacingModeAction,
+                    context),
+                ExternalAPI.addListener(
+                    'performSpeakerModeAction',
+                    delegate._onPerformSpeakerModeAction,
+                    context),
+                ExternalAPI.addListener(
+                    'performSetMutedCallAction',
+                    delegate._onPerformSetMutedCallAction,
+                    context)
+                    
+            ];
+        },
+        setMuted() {
+            // Currently no-op, but remember to remove when implemented on
+            // the native side
+            // APP.UI.emitEvent(UIEvents.ETHERPAD_CLICKED);
+        }
+    };
+}
+
+
+/**
+ * Notifies the feature callkit that the action {@link APP_WILL_MOUNT} is being
+ * dispatched within a specific redux {@code store}.
+ *
+ * @param {Store} store - The redux store in which the specified {@code action}
+ * is being dispatched.
+ * @param {Dispatch} next - The redux {@code dispatch} function to dispatch the
+ * specified {@code action} in the specified {@code store}.
+ * @param {Action} action - The redux action {@code APP_WILL_MOUNT} which is
+ * being dispatched in the specified {@code store}.
+ * @private
+ * @returns {*} The value returned by {@code next(action)}.
+ */
+function _appWillMount({ dispatch, getState }, next, action) {
+    const result = next(action);
+
+    const context = {
+        dispatch,
+        getState
+    };
+
+    const delegate = {
+        _onPerformSetMutedCallAction,
+        _onPerformEndCallAction,
+        _onPerformSetToggleLocalVideoAction,
+        _onPerformToggleCameraFacingModeAction,
+        _onPerformSpeakerModeAction
+    };
+
+    const subscriptions
+        = ExternalAPI.registerSubscriptions(context, delegate);
+
+    subscriptions && dispatch({
+        type: '_SET_EXTERNAL_API_SUBSCRIPTIONS',
+        subscriptions
+    });
+
+    // logger.debug("_appWillMount");
+    // Alert.alert('external-api _appWillMount');
+    return result;
+}
+
+
+(ExternalAPI) && ReducerRegistry.register(
+    'features/external-api',
+    (state = {}, action) => {
+        switch (action.type) {
+        case '_SET_EXTERNAL_API_SUBSCRIPTIONS':
+            return assign(state, 'subscriptions', action.subscriptions);
+        }
+
+        return state;
+    });
+
+
+/**
+ * Notifies the feature callkit that the action
+ * {@link _SET_EXTERNAL_API_SUBSCRIPTIONS} is being dispatched within
+ * a specific redux {@code store}.
+ *
+ * @param {Store} store - The redux store in which the specified {@code action}
+ * is being dispatched.
+ * @param {Dispatch} next - The redux {@code dispatch} function to dispatch the
+ * specified {@code action} in the specified {@code store}.
+ * @param {Action} action - The redux action
+ * {@code _SET_EXTERNAL_API_SUBSCRIPTIONS} which is being dispatched in
+ * the specified {@code store}.
+ * @private
+ * @returns {*} The value returned by {@code next(action)}.
+ */
+function _setExternalApiSubscriptions({ getState }, next, action) {
+    const { subscriptions } = getState()['features/external-api'];
+
+    if (subscriptions) {
+        for (const subscription of subscriptions) {
+            subscription.remove();
+        }
+    }
+
+    return next(action);
+}
 
 /**
  * Middleware that captures Redux actions and uses the ExternalAPI module to
@@ -39,8 +190,20 @@ const CONFERENCE_TERMINATED = 'CONFERENCE_TERMINATED';
 MiddlewareRegistry.register(store => next => action => {
     const result = next(action);
     const { type } = action;
-
+    
     switch (type) {
+    case '_SET_EXTERNAL_API_SUBSCRIPTIONS':
+        return _setExternalApiSubscriptions(store, next, action);
+    
+    case APP_WILL_MOUNT:
+        return _appWillMount(store, next, action);
+    
+    case APP_WILL_UNMOUNT:
+        store.dispatch({
+            type: '_SET_EXTERNAL_API_SUBSCRIPTIONS',
+            subscriptions: undefined
+        });
+        break;
     case CONFERENCE_FAILED: {
         const { error, ...data } = action;
 
@@ -66,6 +229,7 @@ MiddlewareRegistry.register(store => next => action => {
     case CONFERENCE_LEFT:
     case CONFERENCE_WILL_JOIN:
         _sendConferenceEvent(store, action);
+        
         break;
 
     case CONNECTION_DISCONNECTED: {
@@ -307,3 +471,106 @@ function _swallowEvent(store, action, data) {
         return false;
     }
 }
+
+/**
+ * Handles CallKit's event {@code performSetMutedCallAction}.
+ *
+ * @param {Object} event - The details of the CallKit event
+ * {@code performSetMutedCallAction}.
+ * @returns {void}
+ */
+function _onPerformSetMutedCallAction({ callUUID, muted }) {
+    const { dispatch, getState } = this; // eslint-disable-line no-invalid-this
+    const conference = getCurrentConference(getState);
+
+    if (conference && conference.callUUID === callUUID) {
+        muted = Boolean(muted); // eslint-disable-line no-param-reassign
+        sendAnalytics(
+            createTrackMutedEvent('audio', 'call-integration', muted));
+        dispatch(setAudioMuted(muted, /* ensureTrack */ true));
+    }
+}
+
+/**
+ * Handles CallKit's event {@code performSetMutedCallAction}.
+ *
+ * @param {Object} event - The details of the CallKit event
+ * {@code performSetMutedCallAction}.
+ * @returns {void}
+ */
+function _onPerformSetToggleLocalVideoAction({ callUUID, muted }) {
+    const { dispatch, getState } = this; // eslint-disable-line no-invalid-this
+    const conference = getCurrentConference(getState);
+
+    if (conference && conference.callUUID === callUUID) {
+        muted = Boolean(muted); // eslint-disable-line no-param-reassign
+        sendAnalytics(
+            createTrackMutedEvent('audio', 'call-integration', muted));
+        dispatch(setAudioMuted(muted, /* ensureTrack */ true));
+    }
+}
+
+/**
+ * Handles CallKit's event {@code performSetMutedCallAction}.
+ *
+ * @param {Object} event - The details of the CallKit event
+ * {@code performSetMutedCallAction}.
+ * @returns {void}
+ */
+function _onPerformToggleCameraFacingModeAction() {
+    const { dispatch } = this; // eslint-disable-line no-invalid-this
+
+    Alert.alert('_onPerformToggleCameraFacingModeAction');
+    // logger.debug('_onPerformToggleCameraFacingModeAction',APP);
+    dispatch(toggleCameraFacingMode());
+    
+}
+
+/**
+ * Handles CallKit's event {@code performEndCallAction}.
+ *
+ * @param {Object} event - The details of the CallKit event
+ * {@code performEndCallAction}.
+ * @returns {void}
+ */
+function _onPerformEndCallAction({ callUUID }) {
+    const { dispatch, getState } = this; // eslint-disable-line no-invalid-this
+    const conference = getCurrentConference(getState);
+
+    if (conference && conference.callUUID === callUUID) {
+        // We arrive here when a call is ended by the system, for example, when
+        // another incoming call is received and the user selects "End &
+        // Accept".
+        delete conference.callUUID;
+        dispatch(appNavigate(undefined));
+    }
+}
+
+/**
+ * Handles CallKit's event {@code performSetMutedCallAction}.
+ *
+ * @param {Object} event - The details of the CallKit event
+ * {@code performSetMutedCallAction}.
+ * @returns {void}
+ */
+function _onPerformSpeakerModeAction({ callUUID, muted }) {
+    const { dispatch, getState } = this; // eslint-disable-line no-invalid-this
+    const conference = getCurrentConference(getState);
+
+    if (conference && conference.callUUID === callUUID) {
+        muted = Boolean(muted); // eslint-disable-line no-param-reassign
+        sendAnalytics(
+            createTrackMutedEvent('audio', 'call-integration', muted));
+        dispatch(setAudioMuted(muted, /* ensureTrack */ true));
+    }
+}
+
+/*
+
+DeviceEventEmitter.addListener('performToggleCameraFacingModeAction', function(param) { 
+    Alert.alert('DeviceEventEmitter start');
+    logger.debug('CallIntegration=');
+    //_onPerformToggleCameraFacingModeAction();
+  
+});
+*/

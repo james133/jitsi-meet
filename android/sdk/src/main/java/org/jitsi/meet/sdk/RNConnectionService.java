@@ -86,6 +86,9 @@ class RNConnectionService extends ReactContextBaseJavaModule {
                             handle,
                             hasVideo);
 
+        if(true) {
+            return;
+        }
         ReactApplicationContext ctx = getReactApplicationContext();
 
         Uri address = Uri.fromParts(PhoneAccount.SCHEME_SIP, handle, null);

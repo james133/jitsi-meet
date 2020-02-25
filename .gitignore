@@ -83,4 +83,11 @@ android/app/dropbox.key
 android/app/google-services.json
 ios/app/dropbox.key
 ios/app/GoogleService-Info.plist
-
+repo
+android/app/src/main/res/raw
+android/app/src/main/res/drawable-mdpi/images_avatar.png
+android/app/src/main/res/drawable-mdpi/images_btn_google_signin_dark_normal.png
+android/app/src/main/res/drawable-mdpi/images_dropboxlogo_square.png
+android/app/src/main/res/drawable-mdpi/images_iconusers.png
+android/app/src/main/res/drawable-mdpi/images_jitsilogo_square.png
+android/app/src/main/assets/index.android.bundle

@@ -245,10 +245,12 @@ class Conference extends AbstractConference<Props, *> {
         const showGradient = _toolboxVisible;
         const applyGradientStretching = _filmstripVisible && isNarrowAspectRatio(this) && !_shouldDisplayTileView;
 
-        if (_reducedUI) {
-            return this._renderContentForReducedUi();
+        // eslint-disable-next-line no-constant-condition
+        if (_reducedUI || true) {
+            // return this._renderContentForReducedUi();
+            return this._renderContentForOnlyVideoUi();
         }
-
+ 
         return (
             <>
                 <AddPeopleDialog />
@@ -349,12 +351,35 @@ class Conference extends AbstractConference<Props, *> {
             <>
                 <LargeVideo onClick = { this._onClick } />
 
-                {
+                {               
                     _connecting
                         && <TintedView>
                             <LoadingIndicator />
-                        </TintedView>
+                        </TintedView>               
                 }
+            </>
+        );
+    }
+
+    /**
+     * Renders the content for the Conference container when in "only video UI" mode.
+     *
+     * @private
+     * @returns {React$Element}
+     */
+    _renderContentForOnlyVideoUi() {
+        
+
+        return (
+            <>
+                <LargeVideo onClick = { this._onClick } />
+                <SafeAreaView
+                    pointerEvents = 'box-none'
+                    style = { styles.toolboxAndFilmstripContainer }>
+                    <Filmstrip />       
+                </SafeAreaView>
+
+               
             </>
         );
     }

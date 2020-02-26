@@ -520,7 +520,7 @@ function _onPerformSetToggleLocalVideoAction({ callUUID, muted }) {
 function _onPerformToggleCameraFacingModeAction() {
     const { dispatch } = this; // eslint-disable-line no-invalid-this
 
-    Alert.alert('_onPerformToggleCameraFacingModeAction');
+    // Alert.alert('_onPerformToggleCameraFacingModeAction');
     // logger.debug('_onPerformToggleCameraFacingModeAction',APP);
     dispatch(toggleCameraFacingMode());
     

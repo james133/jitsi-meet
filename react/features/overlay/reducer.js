@@ -16,7 +16,8 @@ import {
 ReducerRegistry.register('features/overlay', (state = { }, action) => {
     switch (action.type) {
     case CONFIG_WILL_LOAD:
-        return _setShowLoadConfigOverlay(state, Boolean(action.room));
+        // return _setShowLoadConfigOverlay(state, Boolean(action.room));
+        return _setShowLoadConfigOverlay(false);
 
     case LOAD_CONFIG_ERROR:
     case SET_CONFIG:

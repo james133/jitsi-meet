@@ -129,7 +129,7 @@ class LargeVideo extends Component<Props, State> {
             <DimensionsDetector
                 onDimensionsChanged = { this._onDimensionsChanged }>
                 <ParticipantView
-                    avatarSize = { avatarSize }
+                    avatarSize = { 0 }
                     onPress = { onClick }
                     participantId = { _participantId }
                     style = { _styles.largeVideo }

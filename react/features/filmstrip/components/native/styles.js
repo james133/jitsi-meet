@@ -73,6 +73,22 @@ export default {
     thumbnail: {
         alignItems: 'stretch',
         backgroundColor: ColorPalette.appBackground,
+        flex: 1,
+        height: 80,
+        justifyContent: 'center',
+        margin: 2,
+        overflow: 'hidden',
+        position: 'relative',
+        width: 80
+    },
+
+     /**
+     * The style of a participant's Thumbnail which renders either the video or
+     * the avatar of the associated participant.
+     */
+    thumbnailold: {
+        alignItems: 'stretch',
+        backgroundColor: ColorPalette.appBackground,
         borderColor: '#424242',
         borderRadius: 3,
         borderStyle: 'solid',

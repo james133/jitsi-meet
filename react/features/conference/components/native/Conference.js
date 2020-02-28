@@ -21,7 +21,8 @@ import {
     FILMSTRIP_SIZE,
     Filmstrip,
     isFilmstripVisible,
-    TileView
+    TileView,
+    isRemoteVideoHide
 } from '../../../filmstrip';
 import { LargeVideo } from '../../../large-video';
 import { BackButtonRegistry } from '../../../mobile/back-button';
@@ -109,7 +110,14 @@ type Props = AbstractProps & {
     /**
      * The redux {@code dispatch} function.
      */
-    dispatch: Function
+    dispatch: Function,
+
+      /**
+     * The indicator which determines whether the Toolbox is visible.
+     *
+     * @private
+     */
+    _is_p2p_mode: boolean,
 };
 
 /**
@@ -368,16 +376,34 @@ class Conference extends AbstractConference<Props, *> {
      * @returns {React$Element}
      */
     _renderContentForOnlyVideoUi() {
-        
+        const {
+            _is_p2p_mode
+        } = this.props;
 
         return (
             <>
                 <LargeVideo onClick = { this._onClick } />
-                <SafeAreaView
-                    pointerEvents = 'box-none'
-                    style = { styles.toolboxAndFilmstripContainer }>
-                    <Filmstrip />       
-                </SafeAreaView>
+
+                {
+                    _is_p2p_mode 
+                    && 
+                    <SafeAreaView
+                        pointerEvents = 'box-none'
+                        style = { styles.toolboxAndFilmstripContainerTop }>
+                        <Filmstrip />       
+                    </SafeAreaView>
+                }
+
+                {
+                    !_is_p2p_mode 
+                    && 
+                    <SafeAreaView
+                        pointerEvents = 'box-none'
+                        style = { styles.toolboxAndFilmstripContainer }>
+                        <Filmstrip />       
+                     </SafeAreaView>
+                }
+               
 
                
             </>
@@ -513,7 +539,15 @@ function _mapStateToProps(state) {
          * @private
          * @type {boolean}
          */
-        _toolboxVisible: isToolboxVisible(state)
+        _toolboxVisible: isToolboxVisible(state),
+
+        /**
+         * The indicator which determines whether the Toolbox is visible.
+         *
+         * @private
+         * @type {boolean}
+         */
+        _is_p2p_mode: isRemoteVideoHide(state)
     };
 }
 

@@ -144,5 +144,25 @@ export default {
         // On iPhone X there is the notch. In the two cases BoxModel.margin is
         // not enough.
         top: BoxModel.margin * 3
+    },
+
+    /**
+     * The style of the {@link View} which expands over the whole
+     * {@link Conference} area and splits it between the {@link Filmstrip} and
+     * the {@link Toolbox}.
+     */
+    toolboxAndFilmstripContainerTop: {
+        bottom: 0,
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        left: 0,
+        paddingBottom: BoxModel.padding,
+        position: 'absolute',
+        right: 0,
+
+        // Both on Android and iOS there is the status bar which may be visible.
+        // On iPhone X there is the notch. In the two cases BoxModel.margin is
+        // not enough.
+        top: BoxModel.margin * 3
     }
 };

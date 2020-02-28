@@ -240,7 +240,7 @@ class WelcomePage extends AbstractWelcomePage {
                     styles.button,
                     buttonDisabled ? styles.buttonDisabled : null
                 ] }
-                underlayColor = { ColorPalette.white }>
+                underlayColor = { ColorPalette.black }>
                 { children }
             </TouchableHighlight>
         );

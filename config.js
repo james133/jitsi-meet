@@ -49,7 +49,7 @@ var config = {
 
         // P2P test mode disables automatic switching to P2P when there are 2
         // participants in the conference.
-        p2pTestMode: false
+        p2pTestMode: true
 
         // Enables the test specific features consumed by jitsi-meet-torture
         // testMode: false
@@ -264,7 +264,7 @@ var config = {
     // enableClosePage: false,
 
     // Disable hiding of remote thumbnails when in a 1-on-1 conference call.
-    // disable1On1Mode: false,
+    disable1On1Mode: false,
 
     // Default language for the user interface.
     defaultLanguage: 'zh_CN',

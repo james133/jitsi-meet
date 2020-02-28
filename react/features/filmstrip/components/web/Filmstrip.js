@@ -77,7 +77,15 @@ type Props = {
     /**
      * The redux {@code dispatch} function.
      */
-    dispatch: Dispatch<any>
+    dispatch: Dispatch<any>,
+
+        /**
+     * The indicator which determines whether the filmstrip is visible.
+     *
+     * @private
+     */
+    _remmote_hide: boolean
+
 };
 
 /**

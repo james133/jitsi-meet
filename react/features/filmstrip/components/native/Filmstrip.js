@@ -10,7 +10,7 @@ import {
     makeAspectRatioAware
 } from '../../../base/responsive-ui';
 
-import { isFilmstripVisible } from '../../functions';
+import { isFilmstripVisible, isRemoteVideoHide } from '../../functions';
 
 import LocalThumbnail from './LocalThumbnail';
 import styles from './styles';
@@ -40,7 +40,16 @@ type Props = {
      *
      * @private
      */
-    _visible: boolean
+    _visible: boolean,
+
+    /**
+     * The indicator which determines whether the filmstrip is visible.
+     *
+     * @private
+     */
+    _remmote_hide: boolean
+
+    
 };
 
 /**
@@ -100,7 +109,7 @@ class Filmstrip extends Component<Props> {
             = isNarrowAspectRatio_
                 ? styles.filmstripNarrow
                 : styles.filmstripWide;
-
+        const isRemoteVisable = this.props._remmote_hide;
         return (
             <Container
                 style = { filmstripStyle }
@@ -121,7 +130,7 @@ class Filmstrip extends Component<Props> {
                             && <LocalThumbnail />
                     }
                     {
-
+                        isRemoteVisable && 
                         this._sort(
                                 this.props._participants,
                                 isNarrowAspectRatio_)
@@ -215,7 +224,17 @@ function _mapStateToProps(state) {
          * @private
          * @type {boolean}
          */
-        _visible: isFilmstripVisible(state)
+        _visible: isFilmstripVisible(state),
+
+         /**
+         * The indicator which determines whether the filmstrip is visible. The
+         * mobile/react-native Filmstrip is visible when there are at least 2
+         * participants in the conference (including the local one).
+         *
+         * @private
+         * @type {boolean}
+         */
+        _remmote_hide: isRemoteVideoHide(state),
     };
 }
 

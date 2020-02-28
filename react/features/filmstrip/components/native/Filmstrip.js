@@ -109,7 +109,7 @@ class Filmstrip extends Component<Props> {
             = isNarrowAspectRatio_
                 ? styles.filmstripNarrow
                 : styles.filmstripWide;
-        const isRemoteVisable = this.props._remmote_hide;
+        const _remmote_hide = this.props._remmote_hide;
         return (
             <Container
                 style = { filmstripStyle }
@@ -130,7 +130,7 @@ class Filmstrip extends Component<Props> {
                             && <LocalThumbnail />
                     }
                     {
-                        isRemoteVisable && 
+                        !_remmote_hide && 
                         this._sort(
                                 this.props._participants,
                                 isNarrowAspectRatio_)

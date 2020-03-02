@@ -29,10 +29,15 @@ import { APP_WILL_MOUNT, APP_WILL_UNMOUNT } from '../../base/app';
 import { createTrackMutedEvent, sendAnalytics } from '../../analytics';
 import { appNavigate } from '../../app';
 import { SET_AUDIO_ONLY } from '../../base/audio-only';
+const { AudioMode } = NativeModules;
+import { getLocalVideoType, isLocalVideoTrackMuted } from '../../base/tracks';
+import { setAudioOnly } from '../../base/audio-only';
 import {
     MEDIA_TYPE,
     isVideoMutedByAudioOnly,
+    VIDEO_MUTISM_AUTHORITY,
     setAudioMuted,
+    setVideoMuted,
     toggleCameraFacingMode
 } from '../../base/media';
 /**
@@ -71,7 +76,7 @@ if (ExternalAPI) {
                      delegate._onPerformEndCallAction,
                     context),
                 ExternalAPI.addListener(
-                    'performSetToggleLocalVideoAction',
+                    'performToggleLocalVideoAction',
                     delegate._onPerformSetToggleLocalVideoAction,
                     context),
                 ExternalAPI.addListener(
@@ -79,8 +84,12 @@ if (ExternalAPI) {
                     delegate._onPerformToggleCameraFacingModeAction,
                     context),
                 ExternalAPI.addListener(
-                    'performSpeakerModeAction',
-                    delegate._onPerformSpeakerModeAction,
+                    'performSpeakerModePhoneAction',
+                    delegate._onPerformSpeakerModePhoneAction,
+                    context),
+                ExternalAPI.addListener(
+                    'performSpeakerModeSpeakerAction',
+                    delegate._onPerformSpeakerModeSpeakerAction,
                     context),
                 ExternalAPI.addListener(
                     'performSetMutedCallAction',
@@ -124,7 +133,8 @@ function _appWillMount({ dispatch, getState }, next, action) {
         _onPerformEndCallAction,
         _onPerformSetToggleLocalVideoAction,
         _onPerformToggleCameraFacingModeAction,
-        _onPerformSpeakerModeAction
+        _onPerformSpeakerModePhoneAction,
+        _onPerformSpeakerModeSpeakerAction
     };
 
     const subscriptions
@@ -479,16 +489,18 @@ function _swallowEvent(store, action, data) {
  * {@code performSetMutedCallAction}.
  * @returns {void}
  */
-function _onPerformSetMutedCallAction({ callUUID, muted }) {
+function _onPerformSetMutedCallAction({ muted }) {
     const { dispatch, getState } = this; // eslint-disable-line no-invalid-this
-    const conference = getCurrentConference(getState);
+    //const conference = getCurrentConference(getState);
 
-    if (conference && conference.callUUID === callUUID) {
+   // Alert.alert("_onPerformSetMutedCallAction",String(muted));
+   // if (conference && conference.callUUID === callUUID) {
         muted = Boolean(muted); // eslint-disable-line no-param-reassign
         sendAnalytics(
             createTrackMutedEvent('audio', 'call-integration', muted));
         dispatch(setAudioMuted(muted, /* ensureTrack */ true));
-    }
+        logger.debug("_onPerformSetMutedCallAction muted",muted);
+    //}
 }
 
 /**
@@ -498,16 +510,29 @@ function _onPerformSetMutedCallAction({ callUUID, muted }) {
  * {@code performSetMutedCallAction}.
  * @returns {void}
  */
-function _onPerformSetToggleLocalVideoAction({ callUUID, muted }) {
+function _onPerformSetToggleLocalVideoAction({ muted }) {
     const { dispatch, getState } = this; // eslint-disable-line no-invalid-this
-    const conference = getCurrentConference(getState);
-
-    if (conference && conference.callUUID === callUUID) {
-        muted = Boolean(muted); // eslint-disable-line no-param-reassign
-        sendAnalytics(
-            createTrackMutedEvent('audio', 'call-integration', muted));
-        dispatch(setAudioMuted(muted, /* ensureTrack */ true));
-    }
+    //const conference = getCurrentConference(getState);
+   
+    //if (conference && conference.callUUID === callUUID) {
+       // muted = Boolean(muted); // eslint-disable-line no-param-reassign
+        const { enabled: audioOnly } = getState()['features/base/audio-only'];
+        const tracks = getState()['features/base/tracks'];
+        let _audioOnly =  Boolean(audioOnly);
+        let _videoMediaType = getLocalVideoType(tracks);
+        let _videoMuted = muted;//isLocalVideoTrackMuted(tracks)
+        //Alert.alert('_onPerformSetToggleLocalVideoAction',String(_videoMuted));
+        if (_audioOnly) {
+            dispatch(
+                setAudioOnly(false, /* ensureTrack */ true));
+        }
+        dispatch( setVideoMuted(
+            _videoMuted,
+            _videoMediaType,
+            VIDEO_MUTISM_AUTHORITY.USER,
+            /* ensureTrack */ true));
+        logger.debug("_onPerformSetToggleLocalVideoAction _videoMuted=",_videoMuted);
+    //}
 }
 
 /**
@@ -523,7 +548,7 @@ function _onPerformToggleCameraFacingModeAction() {
     // Alert.alert('_onPerformToggleCameraFacingModeAction');
     // logger.debug('_onPerformToggleCameraFacingModeAction',APP);
     dispatch(toggleCameraFacingMode());
-    
+    logger.debug("_onPerformToggleCameraFacingModeAction");
 }
 
 /**
@@ -543,6 +568,7 @@ function _onPerformEndCallAction({ callUUID }) {
         // Accept".
         delete conference.callUUID;
         dispatch(appNavigate(undefined));
+        logger.debug("_onPerformEndCallAction callUUID=",callUUID);
     }
 }
 
@@ -553,16 +579,31 @@ function _onPerformEndCallAction({ callUUID }) {
  * {@code performSetMutedCallAction}.
  * @returns {void}
  */
-function _onPerformSpeakerModeAction({ callUUID, muted }) {
-    const { dispatch, getState } = this; // eslint-disable-line no-invalid-this
-    const conference = getCurrentConference(getState);
+function _onPerformSpeakerModePhoneAction() {
+    //const { dispatch, getState } = this; // eslint-disable-line no-invalid-this
+    //const conference = getCurrentConference(getState);
 
-    if (conference && conference.callUUID === callUUID) {
-        muted = Boolean(muted); // eslint-disable-line no-param-reassign
-        sendAnalytics(
-            createTrackMutedEvent('audio', 'call-integration', muted));
-        dispatch(setAudioMuted(muted, /* ensureTrack */ true));
-    }
+    //Alert.alert('_onPerformSpeakerModePhoneAction');
+    AudioMode.setAudioDevice("EARPIECE");
+    //dispatch(setAudioMuted(muted, /* ensureTrack */ true));
+    logger.debug("_onPerformSpeakerModePhoneAction EARPIECE");
+}
+
+/**
+ * Handles CallKit's event {@code performSetMutedCallAction}.
+ *
+ * @param {Object} event - The details of the CallKit event
+ * {@code performSetMutedCallAction}.
+ * @returns {void}
+ */
+function _onPerformSpeakerModeSpeakerAction() {
+    //const { dispatch, getState } = this; // eslint-disable-line no-invalid-this
+   // const conference = getCurrentConference(getState);
+   //Alert.alert('_onPerformSpeakerModeSpeakerAction');
+   // muted = Boolean(muted); // eslint-disable-line no-param-reassign
+    AudioMode.setAudioDevice("SPEAKER");
+    logger.debug("_onPerformSpeakerModeSpeakerAction SPEAKER");
+    
 }
 
 /*

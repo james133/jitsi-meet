@@ -23,6 +23,7 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 
+import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.modules.core.PermissionListener;
 
 import org.jitsi.meet.sdk.log.JitsiMeetLogger;
@@ -166,7 +167,23 @@ public class JitsiMeetActivity extends FragmentActivity
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         JitsiMeetActivityDelegate.onActivityResult(this, requestCode, resultCode, data);
     }
+    static public void emitCmd(String cmdname) {
 
+        WritableNativeMap data = new WritableNativeMap();
+        ReactInstanceManagerHolder.emitEvent(
+            cmdname,
+            data);
+
+    }
+    static public void emitCmd(String cmdname,String key ,boolean value ) {
+
+        WritableNativeMap data = new WritableNativeMap();
+        data.putBoolean(key,value);
+        ReactInstanceManagerHolder.emitEvent(
+            cmdname,
+            data);
+
+    }
     @Override
     public void onBackPressed() {
         JitsiMeetActivityDelegate.onBackPressed();

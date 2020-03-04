@@ -104,6 +104,10 @@ public class JitsiMeetActivity extends FragmentActivity
     protected JitsiMeetView getJitsiView() {
         JitsiMeetFragment fragment
             = (JitsiMeetFragment) getSupportFragmentManager().findFragmentById(R.id.jitsiFragment);
+        if(fragment == null){
+            JitsiMeetLogger.e("findFragmentById(R.id.jitsiFragment) fragment == null getJitsiView: ");
+            return null;
+        }
         return fragment.getJitsiView();
     }
 
@@ -116,10 +120,18 @@ public class JitsiMeetActivity extends FragmentActivity
     }
 
     public void join(JitsiMeetConferenceOptions options) {
+        if(getJitsiView() == null) {
+            JitsiMeetLogger.e("join getJitsiView() == null return");
+            return;
+        }
         getJitsiView().join(options);
     }
 
     public void leave() {
+        if(getJitsiView() == null) {
+            JitsiMeetLogger.e("leave()  getJitsiView() == null return");
+            return;
+        }
         getJitsiView().leave();
     }
 
@@ -152,6 +164,10 @@ public class JitsiMeetActivity extends FragmentActivity
     }
 
     protected void initialize() {
+        if(getJitsiView() == null) {
+            JitsiMeetLogger.e("initialize()  getJitsiView() == null return");
+            return;
+        }
         // Listen for conference events.
         getJitsiView().setListener(this);
 
@@ -234,7 +250,7 @@ public class JitsiMeetActivity extends FragmentActivity
     @Override
     public void onConferenceTerminated(Map<String, Object> data) {
         JitsiMeetLogger.i("Conference terminated: " + data);
-        finish();
+        //finish();
     }
 
     @Override

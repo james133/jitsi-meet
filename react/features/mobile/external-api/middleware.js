@@ -12,7 +12,11 @@ import {
     forEachConference,
     isRoomValid,
     getConferenceName,
-    getCurrentConference
+    getCurrentConference,
+    LARGEVIDEO_ON_CLICK,
+    THNUMBNAILVIDEO_ON_CLICK,
+    LOCALVIDEO_ON_CLICK,
+    COMMON_CALLBACK_ENENT
 } from '../../base/conference';
 import { LOAD_CONFIG_ERROR } from '../../base/config';
 import {
@@ -234,7 +238,18 @@ MiddlewareRegistry.register(store => next => action => {
         }
         break;
     }
-
+    case LARGEVIDEO_ON_CLICK:
+        _sendConferenceEvent(store, action);
+        break;
+    case THNUMBNAILVIDEO_ON_CLICK:
+        _sendConferenceEvent(store, action);
+        break;
+    case LOCALVIDEO_ON_CLICK:
+        _sendConferenceEvent(store, action);
+        break;
+    case COMMON_CALLBACK_ENENT:
+        _sendConferenceEvent(store, action);
+        break;
     case CONFERENCE_JOINED:
     case CONFERENCE_LEFT:
     case CONFERENCE_WILL_JOIN:

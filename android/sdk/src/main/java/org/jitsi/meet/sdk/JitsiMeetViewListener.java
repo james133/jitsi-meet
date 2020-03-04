@@ -47,4 +47,37 @@ public interface JitsiMeetViewListener {
      * @param data Map with a "url" key with the conference URL.
      */
     void onConferenceWillJoin(Map<String, Object> data);
+
+    /**
+     * Called before the conference is joined.
+     *
+     * @param data Map with a "url" key with the conference URL.
+     */
+
+    void onLargevideoOnClick(Map<String, Object> data);
+
+    /**
+     * Called before the conference is joined.
+     *
+     * @param data Map with a "url" key with the conference URL.
+     */
+
+    void onThnumbnailvideoOnClick(Map<String, Object> data);
+
+    /**
+     * Called before the conference is joined.
+     *
+     * @param data Map with a "url" key with the conference URL.
+     */
+
+    void onLocalvideoOnClick(Map<String, Object> data);
+
+
+    /**
+     * Called before the conference is joined.
+     *
+     * @param data Map with a "url" key with the conference URL.
+     */
+
+    void onCommonCallbackEnent(Map<String, Object> data);
 }

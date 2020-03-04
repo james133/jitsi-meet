@@ -40,6 +40,15 @@ import styles, { NAVBAR_GRADIENT_COLORS } from './styles';
 
 import type { AbstractProps } from '../AbstractConference';
 
+import {
+    conferenceLargeVideoClick,
+    conferenceLocalVideoClick,
+    conferenceThumbnailVideoClick,
+    conferenceCommonClick,
+    getConferenceName,
+    getCurrentConference
+} from '../../../../features/base/conference';
+
 /**
  * The type of the React {@code Component} props of {@link Conference}.
  */
@@ -118,6 +127,13 @@ type Props = AbstractProps & {
      * @private
      */
     _is_p2p_mode: boolean,
+
+    /**
+     * The indicator which determines whether the Toolbox is visible.
+     *
+     * @private
+     */
+    _state: Object
 };
 
 /**
@@ -191,7 +207,9 @@ class Conference extends AbstractConference<Props, *> {
      * @returns {void}
      */
     _onClick() {
-        this._setToolboxVisible(!this.props._toolboxVisible);
+        // this._setToolboxVisible(!this.props._toolboxVisible);
+        // add native gui callback
+        this.props.dispatch(conferenceLargeVideoClick(getCurrentConference(this.props._state)));
     }
 
     _onHardwareBackPress: () => boolean;
@@ -547,7 +565,15 @@ function _mapStateToProps(state) {
          * @private
          * @type {boolean}
          */
-        _is_p2p_mode: isRemoteVideoHide(state)
+        _is_p2p_mode: isRemoteVideoHide(state),
+
+        /**
+         * The indicator which determines whether the Toolbox is visible.
+         *
+         * @private
+         * @type {boolean}
+         */
+        _state: state
     };
 }
 

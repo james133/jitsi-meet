@@ -255,3 +255,54 @@ export const SET_SIP_GATEWAY_ENABLED = 'SET_SIP_GATEWAY_ENABLED';
  * }
  */
 export const SET_START_MUTED_POLICY = 'SET_START_MUTED_POLICY';
+
+/**
+ * The type of (redux) action which updates the current known status of the
+ * moderator features for starting participants as audio or video muted.
+ *
+ * {
+ *     type: LARGEVIDEO_ON_CLICK,
+ *     startAudioMutedPolicy: boolean,
+ *     startVideoMutedPolicy: boolean
+ * }
+ */
+export const LARGEVIDEO_ON_CLICK = 'LARGEVIDEO_ON_CLICK';
+
+
+/**
+ * The type of (redux) action which updates the current known status of the
+ * moderator features for starting participants as audio or video muted.
+ *
+ * {
+ *     type: THNUMBNAIL_ON_CLICK,
+ *     startAudioMutedPolicy: boolean,
+ *     startVideoMutedPolicy: boolean
+ * }
+ */
+export const THNUMBNAILVIDEO_ON_CLICK = 'THNUMBNAILVIDEO_ON_CLICK';
+
+
+/**
+ * The type of (redux) action which updates the current known status of the
+ * moderator features for starting participants as audio or video muted.
+ *
+ * {
+ *     type: SET_START_MUTED_POLICY,
+ *     startAudioMutedPolicy: boolean,
+ *     startVideoMutedPolicy: boolean
+ * }
+ */
+export const LOCALVIDEO_ON_CLICK = 'LOCALVIDEO_ON_CLICK';
+
+/**
+ * The type of (redux) action which updates the current known status of the
+ * moderator features for starting participants as audio or video muted.
+ *
+ * {
+ *     type: COMMON_CALLBACK_ENENT,
+ *     startAudioMutedPolicy: boolean,
+ *     startVideoMutedPolicy: boolean
+ * }
+ */
+export const COMMON_CALLBACK_ENENT = 'COMMON_CALLBACK_ENENT';
+

@@ -38,6 +38,10 @@ import {
     CONFERENCE_TIMESTAMP_CHANGED,
     CONFERENCE_WILL_JOIN,
     CONFERENCE_WILL_LEAVE,
+    LARGEVIDEO_ON_CLICK,
+    THNUMBNAILVIDEO_ON_CLICK,
+    LOCALVIDEO_ON_CLICK,
+    COMMON_CALLBACK_ENENT,
     DATA_CHANNEL_OPENED,
     KICKED_OUT,
     LOCK_STATE_CHANGED,
@@ -376,6 +380,78 @@ export function conferenceWillJoin(conference: Object) {
         conference
     };
 }
+
+/**
+ * Signals the intention of the application to have the local participant
+ * join the specified conference.
+ *
+ * @param {JitsiConference} conference - The {@code JitsiConference} instance
+ * the local participant will (try to) join.
+ * @returns {{
+    *     type: LARGEVIDEO_ON_CLICK,
+    *     conference: JitsiConference
+    * }}
+    */
+   export function conferenceLargeVideoClick(conference: Object) {
+       return {
+           type: LARGEVIDEO_ON_CLICK,
+           conference
+       };
+   }
+
+/**
+ * Signals the intention of the application to have the local participant
+ * join the specified conference.
+ *
+ * @param {JitsiConference} conference - The {@code JitsiConference} instance
+ * the local participant will (try to) join.
+ * @returns {{
+    *     type: THNUMBNAILVIDEO_ON_CLICK,
+    *     conference: JitsiConference
+    * }}
+    */
+   export function conferenceThumbnailVideoClick(conference: Object) {
+       return {
+           type: THNUMBNAILVIDEO_ON_CLICK,
+           conference
+       };
+   }
+
+/**
+ * Signals the intention of the application to have the local participant
+ * join the specified conference.
+ *
+ * @param {JitsiConference} conference - The {@code JitsiConference} instance
+ * the local participant will (try to) join.
+ * @returns {{
+    *     type: LOCALVIDEO_ON_CLICK,
+    *     conference: JitsiConference
+    * }}
+    */
+   export function conferenceLocalVideoClick(conference: Object) {
+       return {
+           type: LOCALVIDEO_ON_CLICK,
+           conference
+       };
+   }
+
+/**
+ * Signals the intention of the application to have the local participant
+ * join the specified conference.
+ *
+ * @param {JitsiConference} conference - The {@code JitsiConference} instance
+ * the local participant will (try to) join.
+ * @returns {{
+    *     type: COMMON_CALLBACK_ENENT,
+    *     conference: JitsiConference
+    * }}
+    */
+   export function conferenceCommonClick(conference: Object) {
+       return {
+           type: COMMON_CALLBACK_ENENT,
+           conference
+       };
+   }
 
 /**
  * Signals the intention of the application to have the local participant leave

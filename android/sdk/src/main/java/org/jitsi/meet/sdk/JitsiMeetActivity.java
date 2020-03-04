@@ -241,4 +241,21 @@ public class JitsiMeetActivity extends FragmentActivity
     public void onConferenceWillJoin(Map<String, Object> data) {
         JitsiMeetLogger.i("Conference will join: " + data);
     }
+
+    @Override
+    public void onLargevideoOnClick(Map<String, Object> data) {
+        JitsiMeetLogger.i("onLargevideoOnClick: " + data);
+    }
+    @Override
+    public void onThnumbnailvideoOnClick(Map<String, Object> data) {
+        JitsiMeetLogger.i("onThnumbnailvideoOnClick: " + data);
+    }
+    @Override
+    public void onLocalvideoOnClick(Map<String, Object> data) {
+        JitsiMeetLogger.i("onLocalvideoOnClick: " + data);
+    }
+    @Override
+    public void onCommonCallbackEnent(Map<String, Object> data) {
+        JitsiMeetLogger.i("onCommonCallbackEnent: " + data);
+    }
 }

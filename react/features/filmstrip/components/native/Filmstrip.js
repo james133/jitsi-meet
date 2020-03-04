@@ -137,6 +137,7 @@ class Filmstrip extends Component<Props> {
                             .map(p => (
                                 <Thumbnail
                                     key = { p.id }
+                                    renderDisplayName = { true }
                                     participant = { p } />))
 
                     }

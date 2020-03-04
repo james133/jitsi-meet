@@ -31,6 +31,10 @@ class OngoingConferenceTracker {
 
     private static final String CONFERENCE_WILL_JOIN = "CONFERENCE_WILL_JOIN";
     private static final String CONFERENCE_TERMINATED = "CONFERENCE_TERMINATED";
+    private static final String COMMON_CALLBACK_ENENT = "COMMON_CALLBACK_ENENT";
+    private static final String LOCALVIDEO_ON_CLICK = "LOCALVIDEO_ON_CLICK";
+    private static final String THNUMBNAILVIDEO_ON_CLICK = "THNUMBNAILVIDEO_ON_CLICK";
+    private static final String LARGEVIDEO_ON_CLICK = "LARGEVIDEO_ON_CLICK";
 
     private final Collection<OngoingConferenceListener> listeners =
         Collections.synchronizedSet(new HashSet<OngoingConferenceListener>());
@@ -68,6 +72,14 @@ class OngoingConferenceTracker {
                 updateListeners();
                 break;
 
+            case COMMON_CALLBACK_ENENT:
+            case LOCALVIDEO_ON_CLICK:
+            case THNUMBNAILVIDEO_ON_CLICK:
+            case LARGEVIDEO_ON_CLICK:
+                if (url.equals(currentConference)) {
+                    updateListeners();
+                }
+                break;
             case CONFERENCE_TERMINATED:
                 if (url.equals(currentConference)) {
                     currentConference = null;

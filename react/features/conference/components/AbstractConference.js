@@ -75,7 +75,7 @@ export class AbstractConference<P: AbstractProps, S>
  */
 export function abstractMapStateToProps(state: Object) {
     return {
-        _notificationsVisible: shouldDisplayNotifications(state),
+        _notificationsVisible: false ,// shouldDisplayNotifications(state),
         _room: state['features/base/conference'].room,
         _shouldDisplayTileView: shouldDisplayTileView(state)
     };

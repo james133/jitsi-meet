@@ -362,7 +362,7 @@ function _mapStateToProps(state) {
     return {
         ..._abstractMapStateToProps(state),
         _reducedUI: state['features/base/responsive-ui'].reducedUI,
-        _visible: !shouldDisplayNotifications(state)
+        _visible: false //!shouldDisplayNotifications(state)
     };
 }
 

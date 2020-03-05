@@ -88,7 +88,7 @@ export class AbstractApp extends BaseApp<Props, *> {
     _createExtraElement() {
         return (
             <Fragment>
-                <OverlayContainer />
+                { false &&  <OverlayContainer />}
             </Fragment>
         );
     }

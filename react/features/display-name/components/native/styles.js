@@ -4,7 +4,8 @@ import { ColorPalette } from '../../../base/styles';
 
 export default {
     displayNameBackdrop: {
-        alignSelf: 'flex-start',
+        alignSelf: 'center',
+        backgroundColor: 'rgba(28, 32, 37, 0.6)',
         margin: 2,
         paddingHorizontal: 2,
         paddingVertical: 2

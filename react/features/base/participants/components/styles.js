@@ -13,7 +13,20 @@ export default {
         alignItems: 'center',
         justifyContent: 'center'
     },
+    
+    displayNameBackdrop: {
+        alignSelf: 'center',
+        backgroundColor: ColorPalette.transparent,
+        margin: 2,
+        paddingHorizontal: 2,
+        paddingVertical: 2
+    },
 
+    displayNameText: {
+        color: ColorPalette.white,
+        fontSize: 8
+    },
+    
     /**
      * Style for the text rendered when there is a connectivity problem.
      */

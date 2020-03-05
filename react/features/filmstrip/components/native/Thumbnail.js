@@ -188,7 +188,7 @@ function Thumbnail(props: Props) {
                 { videoMuted
                     && <VideoMutedIndicator /> }
             </Container>
-
+           
         </Container>
     );
 }

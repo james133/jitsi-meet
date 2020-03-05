@@ -172,6 +172,40 @@ class ParticipantView extends Component<Props> {
         );
     }
 
+     /**
+     * Renders the connection status label, if appropriate.
+     *
+     * @param {string} connectionStatus - The status of the participant's
+     * connection.
+     * @private
+     * @returns {ReactElement|null}
+     */
+    _renderDisplayName() {
+       
+        const {
+            avatarSize,
+            _participantName: displayName,
+            t
+        } = this.props;
+
+        // XXX Consider splitting this component into 2: one for the large view
+        // and one for the thumbnail. Some of these don't apply to both.
+        const containerStyle = {
+            ...styles.displayNameBackdrop,
+            width: avatarSize/2
+        };
+
+        return (
+            <View
+                pointerEvents = 'box-none'
+                style = { containerStyle }>
+                <Text style = { styles.displayNameText }>
+                    {displayName}
+                </Text>
+            </View>
+        );
+    }
+
     /**
      * Implements React's {@link Component#render()}.
      *
@@ -236,6 +270,9 @@ class ParticipantView extends Component<Props> {
 
                 { this.props.useConnectivityInfoLabel
                     && this._renderConnectionInfo(connectionStatus) }
+                {
+                    false && this._renderDisplayName()
+                }
             </Container>
         );
     }
@@ -254,7 +291,7 @@ class ParticipantView extends Component<Props> {
 function _mapStateToProps(state, ownProps) {
     const { disableVideo, participantId } = ownProps;
     let connectionStatus;
-    let participantName;
+    let participantName = "user";
 
     return {
         _connectionStatus:

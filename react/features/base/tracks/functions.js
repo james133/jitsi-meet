@@ -93,8 +93,24 @@ export function createLocalTracksF(options = {}, firePermissionPromptIsShownEven
         firefox_fake_device, // eslint-disable-line camelcase
         resolution
     } = state['features/base/config'];
-    const constraints = options.constraints ?? state['features/base/config'].constraints;
-
+    var constraints = options.constraints ?? state['features/base/config'].constraints;
+    constraints = {
+        minFps:10,
+        maxFps:20,
+        fps:15,
+        resolution:540,
+        video: {
+            aspectRatio: 16 / 9,
+            frameRate: 15,
+            height: {
+                ideal: 540,
+                max: 720,
+                min: 240
+            }
+        }
+    };
+    var newresolution = 480
+    logger.info('Get media init constraints = ', constraints);
     return (
         loadEffects(store).then(effectsArray => {
             // Filter any undefined values returned by Promise.resolve().
@@ -116,7 +132,7 @@ export function createLocalTracksF(options = {}, firePermissionPromptIsShownEven
                     effects,
                     firefox_fake_device, // eslint-disable-line camelcase
                     micDeviceId,
-                    resolution
+                    newresolution
                 },
                 firePermissionPromptIsShownEvent)
             .catch(err => {

@@ -118,7 +118,6 @@ function _appWillMount({ dispatch, getState }, next, action) {
         _onPerformSetMutedCallAction,
         _onPerformEndCallAction,
         _onPerformSetToggleLocalVideoAction,
-        _onPerformToggleCameraFacingModeAction,
         _onPerformSpeakerModeAction
     };
 
@@ -405,22 +404,6 @@ function _onPerformSetToggleLocalVideoAction({ callUUID, muted }) {
             createTrackMutedEvent('audio', 'call-integration', muted));
         dispatch(setAudioMuted(muted, /* ensureTrack */ true));
     }
-}
-
-/**
- * Handles CallKit's event {@code performSetMutedCallAction}.
- *
- * @param {Object} event - The details of the CallKit event
- * {@code performSetMutedCallAction}.
- * @returns {void}
- */
-function _onPerformToggleCameraFacingModeAction() {
-    //const { dispatch } = this; // eslint-disable-line no-invalid-this
-
-     Alert.alert('_onPerformToggleCameraFacingModeAction');
-    //logger.debug('_onPerformToggleCameraFacingModeAction',APP);
-    //APP.store.dispatch(toggleCameraFacingMode());
-    
 }
 
 /**

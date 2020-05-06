@@ -61,11 +61,11 @@ var config = {
 
     // Disables ICE/UDP by filtering out local and remote UDP candidates in
     // signalling.
-    // webrtcIceUdpDisable: false,
+    webrtcIceUdpDisable: true,
 
     // Disables ICE/TCP by filtering out local and remote TCP candidates in
     // signalling.
-    // webrtcIceTcpDisable: false,
+    webrtcIceTcpDisable: false,
 
 
     // Media
